@@ -1,0 +1,114 @@
+name: Flutter release
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  extract-version:
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.get_version.outputs.app_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from pubspec.yaml
+        id: get_version
+        run: |
+          version=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//')
+          if [ -z "$version" ]; then
+            echo "No version found in pubspec.yaml"
+            exit 1
+          fi
+          echo "app_version=$version" >> $GITHUB_OUTPUT
+
+  build-android:
+    needs: extract-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android AAB
+        run: flutter build appbundle --release
+
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: |
+            build/app/outputs/bundle/release/*.aab
+            build/app/outputs/flutter-apk/app-release.apk
+
+  build-ios:
+    needs: extract-version
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Archive iOS build
+        run: |
+          cd build/ios/iphoneos
+          zip -r ios-app.zip *.app
+        shell: bash
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: build/ios/iphoneos/ios-app.zip
+
+  release:
+    needs: [extract-version, build-android, build-ios]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.extract-version.outputs.app_version }}
+          name: "Release v${{ needs.extract-version.outputs.app_version }}"
+          body: |
+            🚀 Release v${{ needs.extract-version.outputs.app_version }}
+            - Build depuis main
+            - Android (.apk + .aab) & iOS (zip .app)
+          files: |
+            artifacts/android/app-release.apk
+            artifacts/android/*.aab
+            artifacts/ios/ios-app.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
