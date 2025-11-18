@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'services/mqtt_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
+
+  // Connect MQTT and request device list at app launch
+  MQTTService().connect().then((connected) {
+    if (connected) {
+      MQTTService().publishMessage('home/matter/request', 'test');
+    }
+  });
 }
 
 class MyApp extends StatelessWidget {

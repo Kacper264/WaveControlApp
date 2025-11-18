@@ -36,6 +36,7 @@ dependencies:
   sleek_circular_slider: ^2.1.0
   flutter_hsvcolor_picker: ^1.5.1
   flutter_circle_color_picker: ^0.3.0
+  battery_plus: ^4.0.0
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,7 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

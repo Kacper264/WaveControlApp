@@ -1,9 +1,49 @@
 import 'package:flutter/material.dart';
 import 'configuration_screen.dart';
 import 'mqtt_control_page.dart';
+import 'monitoring_screen.dart';
+import 'package:battery_plus/battery_plus.dart';
+import '../services/mqtt_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final MQTTService _mqtt = MQTTService();
+  final Battery _battery = Battery();
+  int _batteryLevel = 100;
+
+  @override
+  void initState() {
+    super.initState();
+    _mqtt.addListener(_onMqttChanged);
+    _readBatteryLevel();
+  }
+
+  @override
+  void dispose() {
+    _mqtt.removeListener(_onMqttChanged);
+    super.dispose();
+  }
+
+  void _onMqttChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  Future<void> _readBatteryLevel() async {
+    try {
+      final level = await _battery.batteryLevel;
+      if (!mounted) return;
+      setState(() => _batteryLevel = level);
+    } catch (e) {
+      // ignore errors, keep placeholder
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,17 +85,38 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.signal_cellular_alt, color: Colors.black54),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: const Icon(Icons.battery_full, color: Colors.black54),
-                  onPressed: () {},
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                children: [
+                  Icon(
+                    _mqtt.isConnected ? Icons.wifi : Icons.wifi_off,
+                    color: _mqtt.isConnected ? Colors.green : Colors.red,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _mqtt.isConnected ? 'Connecté' : 'Déconnecté',
+                    style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                  const SizedBox(width: 12),
+                  // Small battery indicator (shows actual level)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.battery_full,
+                        color: Colors.black54,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$_batteryLevel%',
+                        style: const TextStyle(color: Colors.black54, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -97,37 +158,42 @@ class HomeScreen extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                     onTap: () {
-                      // TODO: Navigation vers la page de monitoring
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MonitoringScreen(),
+                        ),
+                      );
                     },
                   ),
                   _buildGradientButton(
                     icon: Icons.refresh,
-                    label: 'Reset',
+                    label: 'Reset Periph',
                     gradient: const LinearGradient(
                       colors: [Color(0xFF8C5CF6), Color(0xFF4D9FFF)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     onTap: () {
-                      // TODO: Implémenter la réinitialisation
+                      MQTTService().publishMessage('home/matter/request', 'test');
                     },
                   ),
                   _buildGradientButton(
-                      icon: Icons.send,
+                    icon: Icons.send,
                     label: 'Test Request',
                     gradient: const LinearGradient(
                       colors: [Color(0xFF8C5CF6), Color(0xFF4D9FFF)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MqttControlPage(),
-                          ),
-                        );
-                      },
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MqttControlPage(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -174,7 +240,7 @@ class _AnimatedGradientButtonState extends State<_AnimatedGradientButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -182,7 +248,7 @@ class _AnimatedGradientButtonState extends State<_AnimatedGradientButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,

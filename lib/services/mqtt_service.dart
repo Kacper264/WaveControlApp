@@ -112,6 +112,73 @@ class MQTTService extends ChangeNotifier {
 
   void _handleIncomingMessage(String topic, String payload) {
     try {
+      if (topic == 'home/matter/response') {
+        try {
+          String jsonStr = payload;
+          final firstBracket = payload.indexOf('[');
+          if (firstBracket != -1) jsonStr = payload.substring(firstBracket);
+          final list = json.decode(jsonStr) as List<dynamic>;
+
+          // Collect all device IDs from the response
+          final Set<String> receivedDeviceIds = {};
+
+          for (final item in list) {
+            try {
+              final map = item as Map<String, dynamic>;
+              final id = (map['id'] as String?) ?? '';
+              final idParts = id.split('.');
+              if (idParts.length < 2) continue;
+              final baseId = idParts[1]; // e.g. prise_1 or lum_2
+              final baseTopic = 'home/$baseId/set';
+              receivedDeviceIds.add(baseTopic);
+
+              final state = ((map['state'] as String?) ?? '').toUpperCase();
+              final friendly = map['friendly_name'] as String?;
+              final attrs = (map['attributes'] as Map<String, dynamic>?) ?? {};
+
+              final deviceState = _deviceStates.putIfAbsent(
+                baseTopic,
+                () => DeviceState(topic: baseTopic, state: state, friendlyName: friendly),
+              );
+
+              int? brightness;
+              List<int>? rgb;
+              if (attrs.containsKey('brightness')) {
+                try {
+                  brightness = int.parse(attrs['brightness'].toString());
+                } catch (_) {}
+              }
+              if (attrs.containsKey('rgb_color')) {
+                try {
+                  var rgbStr = attrs['rgb_color'].toString();
+                  rgbStr = rgbStr.replaceAll(RegExp(r'[()\[\]\s]'), '');
+                  final parts = rgbStr.split(',');
+                  if (parts.length == 3) {
+                    rgb = parts.map((s) => int.parse(s)).toList();
+                  }
+                } catch (_) {}
+              }
+
+              deviceState.update(state: state, brightness: brightness, rgbColor: rgb);
+              if (friendly != null) deviceState.friendlyName = friendly;
+            } catch (e) {
+              print('Error parsing item in matter response: $e');
+            }
+          }
+
+          // Remove devices that are no longer in the response
+          _deviceStates.removeWhere((key, value) => !receivedDeviceIds.contains(key));
+
+          notifyListeners();
+        } catch (e) {
+          print('Error parsing matter response JSON: $e');
+        }
+        // add to history
+        _history.insert(0, CommandHistory(topic: topic, message: payload, timestamp: DateTime.now(), success: true));
+        notifyListeners();
+        return;
+      }
+
       // Extraire le device ID et le type de message du topic
       // Format: home/lum_1/type/state
       final parts = topic.split('/');
@@ -121,6 +188,12 @@ class MQTTService extends ChangeNotifier {
       final baseTopic = 'home/$deviceId/set';
       final messageType = parts[2]; // ex: state, brightness, rgb_color
       
+      // Vérifier si le périphérique est explicitement mentionné dans les réponses MQTT
+      if (!_deviceStates.containsKey(baseTopic)) {
+        print('Ignoré: périphérique non mentionné dans les réponses MQTT ($baseTopic)');
+        return;
+      }
+
       // Récupérer ou créer l'état de l'appareil
       final deviceState = _deviceStates.putIfAbsent(
         baseTopic, 

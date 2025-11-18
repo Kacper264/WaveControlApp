@@ -5,6 +5,7 @@ class DeviceState {
   int _brightness = 0; // stocké en 0-255
   List<int>? rgbColor; // [R,G,B] values
   DateTime lastUpdated;
+  String? friendlyName;
 
   // Getter/Setter pour brightness en pourcentage
   int get brightness => (_brightness * 100 / 255).round();
@@ -21,6 +22,7 @@ class DeviceState {
     this.color,
     int brightness = 0,
     this.rgbColor,
+    this.friendlyName,
     DateTime? lastUpdated,
   }) : _brightness = brightness,
        lastUpdated = lastUpdated ?? DateTime.now();
@@ -47,5 +49,6 @@ class DeviceState {
   @override
   String toString() => '${lastUpdated.toLocal().toIso8601String()} • $topic: $state'
       '${brightness > 0 ? ' (${brightness}%)' : ''}'
-      '${color != null ? ' ($color)' : ''}';
+      '${color != null ? ' ($color)' : ''}'
+      '${friendlyName != null ? ' • $friendlyName' : ''}';
 }

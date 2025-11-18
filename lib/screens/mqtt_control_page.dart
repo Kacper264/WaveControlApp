@@ -13,13 +13,6 @@ class MqttControlPage extends StatefulWidget {
 class _MqttControlPageState extends State<MqttControlPage> {
   final MQTTService _mqtt = MQTTService();
 
-  final List<Map<String, String>> _devices = [
-    {'name': 'Lamp 1', 'topic': 'home/lum_1/set'},
-    {'name': 'Lamp 2', 'topic': 'home/lum_2/set'},
-    {'name': 'Prise 1', 'topic': 'home/prise_1/set'},
-    {'name': 'Prise 2', 'topic': 'home/prise_2/set'},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -148,36 +141,34 @@ class _MqttControlPageState extends State<MqttControlPage> {
         children: [
           Expanded(
             child: ListView.separated(
-              itemCount: _devices.length,
+              itemCount: _mqtt.deviceStates.values.length,
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (context, index) {
-                final d = _devices[index];
-                final topic = d['topic']!;
+                final device = _mqtt.deviceStates.values.toList()[index];
+                final topic = device.topic;
+                final name = device.friendlyName ?? topic;
+                final state = device.state;
+                final isLamp = !topic.contains('prise');
+                final displayColor = isLamp ? device.displayColor : null;
+                final brightness = isLamp ? device.brightness : 0;
+
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   title: Row(
                     children: [
-                      Expanded(child: Text(d['name'] ?? topic)),
+                      Expanded(child: Text(name)),
                       const SizedBox(width: 8),
-                      // show state and color if available
                       Builder(builder: (ctx) {
-                        final device = _mqtt.deviceStates[topic];
-                        final state = device?.state ?? '—';
-                        final isLamp = !topic.contains('prise');
-                        final displayColor = isLamp ? (device?.displayColor ?? '#FFFFFF') : null;
-                        final brightness = isLamp ? (device?.brightness ?? 0) : 0;
-                        
                         return Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Cercle de couleur cliquable (seulement pour les lampes)
                             if (isLamp) ...[
                               GestureDetector(
                                 onTap: () {
                                   if (state == 'ON') {
                                     _showColorPicker(
-                                      topic, 
-                                      Color(int.parse(displayColor.replaceFirst('#', '0xFF')))
+                                      topic,
+                                      Color(int.parse(displayColor!.replaceFirst('#', '0xFF'))),
                                     );
                                   }
                                 },
@@ -193,7 +184,6 @@ class _MqttControlPageState extends State<MqttControlPage> {
                               ),
                               const SizedBox(width: 6),
                             ],
-                            // Luminosité cliquable (seulement pour les lampes)
                             if (isLamp && brightness > 0) ...[
                               GestureDetector(
                                 onTap: () {
