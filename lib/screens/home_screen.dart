@@ -5,6 +5,7 @@ import 'configuration_screen.dart';
 import 'mqtt_control_page.dart';
 import 'monitoring_screen.dart';
 import 'settings_screen.dart';
+import 'view_configs_screen.dart';
 // import 'package:battery_plus/battery_plus.dart'; // plus utilisé
 import '../services/mqtt_service.dart';
 import '../services/app_settings.dart';
@@ -226,6 +227,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
+      floatingActionButton: _settings.userMode == UserMode.user
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(context, _createRoute(const ViewConfigsScreen()));
+              },
+              backgroundColor: AppTheme.primaryPurple,
+              icon: const Icon(Icons.visibility_rounded, color: Colors.white),
+              label: Text(
+                _settings.text('view_configs'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : null,
     );
   }
 

@@ -341,6 +341,11 @@ class AppSettings extends ChangeNotifier {
         'refresh': 'Refresh',
         'no_remote_saved': 'No remote saved',
         'chinese': 'Chinese',
+        'view_configs': 'View configurations',
+        'read_only_mode': 'Read-only mode',
+        'loading_configs': 'Loading configurations...',
+        'read_only': 'Read-only',
+        'config_error': 'Configuration error',
       };
     } else if (_language == 'zh') {
       return {
@@ -521,6 +526,11 @@ class AppSettings extends ChangeNotifier {
         'remote_deleted_with_name': '遥控器已删除：',
         'refresh': '刷新',
         'no_remote_saved': '未保存遥控器',
+        'view_configs': '查看配置',
+        'read_only_mode': '只读模式',
+        'loading_configs': '正在加载配置...',
+        'read_only': '只读',
+        'config_error': '配置错误',
       };
     } else if (_language == 'es') {
       return {
@@ -701,6 +711,11 @@ class AppSettings extends ChangeNotifier {
         'remote_deleted_with_name': 'Control remoto eliminado:',
         'refresh': 'Actualizar',
         'no_remote_saved': 'Ningún control remoto guardado',
+        'view_configs': 'Ver configuraciones',
+        'read_only_mode': 'Modo de solo lectura',
+        'loading_configs': 'Cargando configuraciones...',
+        'read_only': 'Solo lectura',
+        'config_error': 'Error de configuración',
       };
     } else if (_language == 'de') {
       return {
@@ -881,6 +896,11 @@ class AppSettings extends ChangeNotifier {
         'remote_deleted_with_name': 'Fernbedienung gelöscht:',
         'refresh': 'Aktualisieren',
         'no_remote_saved': 'Keine Fernbedienung gespeichert',
+        'view_configs': 'Konfigurationen anzeigen',
+        'read_only_mode': 'Nur-Lese-Modus',
+        'loading_configs': 'Konfigurationen werden geladen...',
+        'read_only': 'Nur lesen',
+        'config_error': 'Konfigurationsfehler',
       };
     } else {
       return {
@@ -1062,6 +1082,11 @@ class AppSettings extends ChangeNotifier {
         'refresh': 'Actualiser',
         'no_remote_saved': 'Aucune télécommande enregistrée',
         'chinese': 'Chinois',
+        'view_configs': 'Voir les configurations',
+        'read_only_mode': 'Mode lecture seule',
+        'loading_configs': 'Chargement des configurations...',
+        'read_only': 'Lecture seule',
+        'config_error': 'Erreur de configuration',
       };
     }
   }
