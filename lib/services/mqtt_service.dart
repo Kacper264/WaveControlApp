@@ -23,6 +23,7 @@ class MQTTService extends ChangeNotifier {
   factory MQTTService() => _instance;
   MQTTService._internal() {
     _listenToConnectivityChanges();
+    _startPowerPolling();
   }
 
   MqttServerClient? _client;
@@ -36,6 +37,7 @@ class MQTTService extends ChangeNotifier {
   String? _savedPassword;
   bool _isReconnecting = false;
   Timer? _reconnectTimer;
+  Timer? _powerRequestTimer;
   
   // Connectivité
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -212,6 +214,8 @@ class MQTTService extends ChangeNotifier {
   void _onConnected() {
     _isConnected = true;
     notifyListeners();
+    _startPowerPolling();
+    _requestPowerStatus();
     try {
       final payload = MqttClientPayloadBuilder()..addString('Online');
       _client?.publishMessage('home/status', MqttQos.atLeastOnce, payload.payload!);
@@ -221,15 +225,32 @@ class MQTTService extends ChangeNotifier {
     print('Connected');
   }
 
+  void _startPowerPolling() {
+    _powerRequestTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+      _requestPowerStatus();
+    });
+  }
+
+  Future<void> _requestPowerStatus() async {
+    if (!_isConnected) return;
+    await publishMessage('home/wristband/request/power', '');
+  }
+
   void _onSubscribed(String topic) {
     print('Subscribed to: $topic');
   }
 
   void _handleIncomingMessage(String topic, String payload) {
     // Gestion du topic batterie/secteur du bracelet
-    if (topic == 'home/wristband/PowerUnit') {
+    if (topic == 'home/wristband/feedback/power') {
       try {
-        final data = json.decode(payload);
+        // Corriger le format JSON invalide (cles sans guillemets)
+        // {bat_lvl:70,sect:true} -> {"bat_lvl":70,"sect":true}
+        final fixedPayload = payload
+            .replaceAll('bat_lvl:', '"bat_lvl":')
+            .replaceAll('sect:', '"sect":');
+
+        final data = json.decode(fixedPayload);
         final int? batLvl = data['bat_lvl'] is int ? data['bat_lvl'] : int.tryParse(data['bat_lvl'].toString());
         final bool? sect = data['sect'] is bool ? data['sect'] : (data['sect'].toString().toLowerCase() == 'true');
         if (batLvl != null && sect != null) {
@@ -479,6 +500,7 @@ class MQTTService extends ChangeNotifier {
     _reconnectTimer?.cancel();
     _connectivitySubscription?.cancel();
     _updatesSubscription?.cancel();
+    _powerRequestTimer?.cancel();
     disconnect();
     super.dispose();
   }
