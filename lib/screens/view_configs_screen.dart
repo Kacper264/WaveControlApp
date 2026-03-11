@@ -138,19 +138,27 @@ class _ViewConfigsScreenState extends State<ViewConfigsScreen> {
 
   IconData _getIconForMovement(String movement) {
     final normalized = movement.toLowerCase();
+    final compact = normalized.replaceAll(RegExp(r'[^a-z]'), '');
+
+    if (compact.contains('cercleleft') || compact.contains('circleleft') || compact.contains('circlegauche')) {
+      return FontAwesomeIcons.arrowRotateRight;
+    }
+    if (compact.contains('cercleright') || compact.contains('circleright') || compact.contains('circledroite') || compact.contains('circledroit')) {
+      return FontAwesomeIcons.arrowRotateLeft;
+    }
     if (normalized.contains('cercle') && (normalized.contains('gauche') || normalized.contains('droit') || normalized.contains('droite'))) {
       return normalized.contains('gauche')
           ? FontAwesomeIcons.arrowRotateLeft
           : FontAwesomeIcons.arrowRotateRight;
     }
-    if (normalized.contains('point')) return Icons.circle;
-    if (normalized.contains('haut')) return Icons.arrow_upward_rounded;
-    if (normalized.contains('bas')) return Icons.arrow_downward_rounded;
-    if (normalized.contains('gauche')) return Icons.arrow_back_rounded;
-    if (normalized.contains('droite') || normalized.contains('droit')) return Icons.arrow_forward_rounded;
-    if (normalized.contains('tap') || normalized.contains('touche')) return Icons.touch_app_rounded;
-    if (normalized.contains('double')) return Icons.repeat_rounded;
-    if (normalized.contains('long')) return Icons.pan_tool_rounded;
+    if (compact.contains('point')) return Icons.circle;
+    if (compact == 'up' || compact.contains('haut')) return Icons.arrow_upward_rounded;
+    if (compact == 'down' || compact.contains('bas')) return Icons.arrow_downward_rounded;
+    if (compact == 'left' || compact.contains('gauche')) return Icons.arrow_back_rounded;
+    if (compact == 'right' || compact.contains('droite') || compact.contains('droit')) return Icons.arrow_forward_rounded;
+    if (compact.contains('tap') || compact.contains('touche')) return Icons.touch_app_rounded;
+    if (compact.contains('double')) return Icons.repeat_rounded;
+    if (compact.contains('long')) return Icons.pan_tool_rounded;
     return Icons.gesture_rounded;
   }
 

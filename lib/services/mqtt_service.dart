@@ -161,7 +161,8 @@ class MQTTService extends ChangeNotifier {
             final topic = rec.topic;
             final mqttMessage = rec.payload as MqttPublishMessage;
             final payload = MqttPublishPayload.bytesToStringAsString(mqttMessage.payload.message);
-            _handleIncomingMessage(topic, payload);
+            final isRetained = mqttMessage.header?.retain ?? false;
+            _handleIncomingMessage(topic, payload, isRetained: isRetained);
           } catch (e) {
             print('Error handling incoming message: $e');
           }
@@ -240,7 +241,7 @@ class MQTTService extends ChangeNotifier {
     print('Subscribed to: $topic');
   }
 
-  void _handleIncomingMessage(String topic, String payload) {
+  void _handleIncomingMessage(String topic, String payload, {bool isRetained = false}) {
     // Gestion du topic batterie/secteur du bracelet
     if (topic == 'home/wristband/feedback/power') {
       try {
@@ -269,12 +270,26 @@ class MQTTService extends ChangeNotifier {
         timestamp: DateTime.now(),
         success: true,
         isIncoming: true,
+        isRetained: isRetained,
       ));
       // Garder seulement les 50 derniers messages
       if (_recentMessages.length > 50) {
         _recentMessages.removeLast();
       }
       notifyListeners(); // Notifier les écouteurs quand un nouveau message est reçu
+    }
+
+    if (topic == 'home/wristband/move' || topic == 'home/wrisband/move') {
+      _history.insert(0, CommandHistory(
+        topic: topic,
+        message: payload,
+        timestamp: DateTime.now(),
+        success: true,
+        isIncoming: true,
+        isRetained: isRetained,
+      ));
+      notifyListeners();
+      return;
     }
 
     try {
@@ -346,6 +361,7 @@ class MQTTService extends ChangeNotifier {
           timestamp: DateTime.now(),
           success: true,
           isIncoming: true,
+          isRetained: isRetained,
         ));
         notifyListeners();
         return;
@@ -414,6 +430,7 @@ class MQTTService extends ChangeNotifier {
       timestamp: DateTime.now(),
       success: true,
       isIncoming: true,
+      isRetained: isRetained,
     ));
     notifyListeners();
   }
